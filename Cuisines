@@ -1,0 +1,194 @@
+import datetime
+import json
+
+
+class PlanNettoyageCuisine:
+
+    def __init__(self, nom_hotel="Hôtel Grand Palace 5★"):
+        self.nom_hotel = nom_hotel
+        self.pnd_database = self._initialiser_pnd_5etoiles()
+        self.historique_enregistrements = []
+
+    def _initialiser_pnd_5etoiles(self):
+        """Base de données initiale du Plan de Nettoyage et Désinfection (Standards 5★)"""
+        return {
+            "Z1_PREPARATION_FROIDE": {
+                "nom": "Zone Préparation Froide & Garde-Manger",
+                "taches": [
+                    {
+                        "id": "Z1_01",
+                        "element": "Tables d'inox & Planches à découper",
+                        "frequence": "Apres_Usage",
+                        "produit": "Détergent-Désinfectant Alimentaire (Norme EN 1276/13697)",
+                        "methode": "1. Rincer eau chaude 2. Pulvériser 3. Temps contact 5min 4. Rincer eau potable 5. Racler",
+                        "critique": True,
+                    },
+                    {
+                        "id": "Z1_02",
+                        "element": "Trancheur à jambon / Robot pâtissier",
+                        "frequence": "Apres_Usage",
+                        "produit": "Dégraissant Désinfectant Contact Alimentaire",
+                        "methode": "Démontage complet des lames, trempage, désinfection, séchage air libre",
+                        "critique": True,
+                    },
+                    {
+                        "id": "Z1_03",
+                        "element": "Sol & Siphons de sol",
+                        "frequence": "Quotidien_Fin_Service",
+                        "produit": "Détergent Désinfectant Sol Alcalin",
+                        "methode": "Balayage humide, brossage, lavage 2 seaux, raclage vers siphon",
+                        "critique": False,
+                    },
+                ],
+            },
+            "Z2_CHAUD_ET_CUISSON": {
+                "nom": "Zone Cuisson & Piano Central",
+                "taches": [
+                    {
+                        "id": "Z2_01",
+                        "element": "Friteuses et bacs à huile",
+                        "frequence": "Quotidien_Fin_Service",
+                        "produit": "Dégraissant Haute Température",
+                        "methode": "Filtrage huile, dégraissage cuve, rinçage abondant, séchage parfait",
+                        "critique": True,
+                    },
+                    {
+                        "id": "Z2_02",
+                        "element": "Hottes d'extraction & Filtres inox",
+                        "frequence": "Hebdomadaire",
+                        "produit": "Décapant Dégraissant Puissant",
+                        "methode": "Démontage filtres, trempage en bac à mousse, passage au lave-vaisselle",
+                        "critique": False,
+                    },
+                ],
+            },
+            "Z3_PLONGE_ET_LAVERIE": {
+                "nom": "Zone Laverie & Plonge Vaisselle",
+                "taches": [
+                    {
+                        "id": "Z3_01",
+                        "element": "Lave-vaisselle à capot / Tunnel de lavage",
+                        "frequence": "Quotidien_Fin_Service",
+                        "produit": "Détartrant & Désinfectant Lave-vaisselle",
+                        "methode": "Vidange complète, nettoyage des filtres, rinçage des bras de lavage, séchage porte ouverte",
+                        "critique": True,
+                    }
+                ],
+            },
+            "Z4_CHAMBRES_FROIDES": {
+                "nom": "Chambres Froides & Stockage",
+                "taches": [
+                    {
+                        "id": "Z4_01",
+                        "element": "Poignées de portes & Rayonnages inox CF",
+                        "frequence": "Quotidien",
+                        "produit": "Désinfectant Sans Rinçage Alcoolique",
+                        "methode": "Pulvérisation et essuyage microfibre dédiée (Couleur Bleue)",
+                        "critique": True,
+                    },
+                    {
+                        "id": "Z4_02",
+                        "element": "Nettoyage complet CF (Sols, Parois, Evaporateur)",
+                        "frequence": "Hebdomadaire",
+                        "produit": "Détartrant Désinfectant Spécial Froid",
+                        "methode": "Sortie des denrées, nettoyage des clayettes, lavage parois et sol",
+                        "critique": True,
+                    },
+                ],
+            },
+        }
+
+    def afficher_plan_complet(self):
+        """Affiche l'intégralité du PND structuré par zone"""
+        print(f"\n=======================================================")
+        print(f"   PLAN DE NETTOYAGE ET DÉSINFECTION - {self.nom_hotel}")
+        print(f"=======================================================\n")
+
+        for code_zone, zone_info in self.pnd_database.items():
+            print(f"📍 ZONE : {zone_info['nom']} [{code_zone}]")
+            print("-" * 60)
+            for t in zone_info["taches"]:
+                critique_tag = "[CRITIQUE - CCP]" if t["critique"] else "[STANDARD]"
+                print(
+                    f"  • ID: {t['id']} | {t['element']} {critique_tag}\n"
+                    f"    Fréquence : {t['frequence']}\n"
+                    f"    Produit   : {t['produit']}\n"
+                    f"    Méthode   : {t['methode']}\n"
+                )
+            print()
+
+    def enregistrer_nettoyage(self, id_tache, nom_agent, conforme=True, remarque=""):
+        """Permet à un agent ou chef d'équipe de valider une tâche (Traçabilité HACCP)"""
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # Recherche de la tâche
+        tache_trouvee = None
+        for zone in self.pnd_database.values():
+            for t in zone["taches"]:
+                if t["id"] == id_tache:
+                    tache_trouvee = t
+                    break
+
+        if not tache_trouvee:
+            print(f"❌ Erreur : La tâche {id_tache} n'existe pas dans le PND.")
+            return
+
+        enregistrement = {
+            "horodatage": now,
+            "id_tache": id_tache,
+            "element": tache_trouvee["element"],
+            "agent": nom_agent,
+            "status": "CONFORME" if conforme else "NON-CONFORME",
+            "remarque": remarque,
+            "est_critique": tache_trouvee["critique"],
+        }
+
+        self.historique_enregistrements.append(enregistrement)
+
+        print(
+            f"✅ Enregistrement effectué à {now} pour '{tache_trouvee['element']}' par {nom_agent}."
+        )
+        if not conforme:
+            print(
+                f"⚠️ ALERTE NON-CONFORMITÉ : Une action corrective doit être menée immédiatement !"
+            )
+
+    def exporter_registre_json(self, filename="registre_pnd_cuisine.json"):
+        """Exporte l'historique sous format JSON pour archivage / inspection sanitaire"""
+        with open(filename, "w", encoding="utf-8") as f:
+            json.dump(self.historique_enregistrements, f, ensure_ascii=False, indent=4)
+        print(f"📁 Registre d'audit exporté avec succès sous '{filename}'.")
+
+
+# =====================================================================
+# DEMONSTRATION D'UTILISATION DU PROGRAMME
+# =====================================================================
+if __name__ == "__main__":
+    # 1. Initialisation du système pour l'hôtel
+    pnd_hotel = PlanNettoyageCuisine("Le Ritz Grand Luxe 5★")
+
+    # 2. Affichage du PND complet
+    pnd_hotel.afficher_plan_complet()
+
+    # 3. Simulation des contrôles effectués par les agents de nettoyage
+    print("\n--- SIMULATION DE LA SAISIE EN DIRECT PAR LES AGENTS ---")
+
+    # L'agent Jean valide le nettoyage des tables de la zone froide
+    pnd_hotel.enregistrer_nettoyage(
+        id_tache="Z1_01",
+        nom_agent="Jean Dupont (Agent Cuisinier)",
+        conforme=True,
+        remarque="Ras, produit dilué à 2%",
+    )
+
+    # L'agent Marc détecte un problème sur le lave-vaisselle
+    pnd_hotel.enregistrer_nettoyage(
+        id_tache="Z3_01",
+        nom_agent="Marc Vance (Agent Entretien)",
+        conforme=False,
+        remarque="Dépôt de tartre important persistant - Produit détartrant épuisé",
+    )
+
+    # 4. Exportation du registre des contrôles
+    print("\n--- ARCHIVAGE ET EXPORTATION HACCP ---")
+    pnd_hotel.exporter_registre_json()
